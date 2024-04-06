@@ -28,13 +28,59 @@ app.post("/join", async (req, res) => {
     const page = await browser.newPage();
     await page.goto(url);
 
-    // Wait for the button with class "muF1" to render
-    // setTimeout(() => {
-    //   page.waitForSelector(buttonId);
-    //   // Click on the button
-    //   page.click(buttonId);
-    // }, 10000);
-    // await page.waitForSelector(buttonId);
+    // Inject Zoom Web SDK scripts into the page
+    await page.evaluate(() => {
+      const scripts = [
+        "https://source.zoom.us/1.9.0/lib/vendor/react.min.js",
+        "https://source.zoom.us/1.9.0/lib/vendor/react-dom.min.js",
+        "https://source.zoom.us/1.9.0/lib/vendor/redux.min.js",
+        "https://source.zoom.us/1.9.0/lib/vendor/redux-thunk.min.js",
+        "https://source.zoom.us/1.9.0/lib/vendor/lodash.min.js",
+        "https://source.zoom.us/1.9.0/lib/vendor/moment.min.js",
+        "https://source.zoom.us/1.9.0/lib/index.min.js",
+      ];
+
+      scripts.forEach((src) => {
+        const script = document.createElement("script");
+        script.src = src;
+        document.head.appendChild(script);
+      });
+    });
+
+    // Execute Zoom SDK code within the browser context
+    await page.evaluate(() => {
+      // Here you can write your Zoom SDK code
+      // For example, initializing Zoom and joining a meeting
+      ZoomMtg.setZoomJSLib("https://source.zoom.us/1.9.0/lib", "/av");
+      ZoomMtg.preLoadWasm();
+      ZoomMtg.prepareJssdk();
+
+      try {
+        ZoomMtg.init({
+          leaveUrl: "https://zoom.us/",
+          isSupportAV: true,
+          success: function () {
+            ZoomMtg.join({
+              signature: "your-signature",
+              apiKey: "your-api-key",
+              meetingNumber: "your-meeting-number",
+              userName: "Your Name",
+              userEmail: "your-email@example.com",
+              passWord: "your-meeting-password",
+              success: function (res) {
+                console.log("join meeting success");
+              },
+              error: function (res) {
+                console.error("join meeting failed", res);
+              },
+            });
+          },
+          error: function (res) {
+            console.error("ZoomMtg.init failed", res);
+          },
+        });
+      } catch (error) {}
+    });
 
     // Send a success response
     res.json({
