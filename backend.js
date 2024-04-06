@@ -1,5 +1,5 @@
 import express from "express";
-import puppeteer, { Dialog } from "puppeteer";
+import puppeteer, { Dialog, Mouse } from "puppeteer";
 
 const app = express();
 const port = 3000;
@@ -31,7 +31,15 @@ app.post("/join", async (req, res) => {
     const meetPassCode = passcode.trim();
     const joineeName = name.trim();
     console.log(meetId, meetPassCode, joineeName);
-    browser = await puppeteer.launch({headless: false});
+    browser = await puppeteer.launch({
+      headless: false,
+      args: [
+        "--disable-notifications",
+        "--enable-automation",
+        "--start-maximized",
+      ],
+      ignoreDefaultArgs: false,
+    });
     const [page] = await browser.pages();
     const ua =
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36";
@@ -49,8 +57,8 @@ app.post("/join", async (req, res) => {
     const frame = await f.contentFrame();
     await frame.type("#input-for-pwd", meetPassCode);
     await frame.type("#input-for-name", joineeName);
-    await frame.$$eval("button", els =>
-      els.find(el => el.textContent.trim() === "Join").click()
+    await frame.$$eval("button", (els) =>
+      els.find((el) => el.textContent.trim() === "Join").click()
     );
     await frame.waitForSelector(".join-dialog");
     // await page.waitForFunction(`
@@ -58,12 +66,17 @@ app.post("/join", async (req, res) => {
     // `);
     // const sf = await page.waitForSelector("#webclient");
     // const sframe = await sf.contentFrame();
-    await frame.$$eval(".footer-button-base__button-label", els =>
-      {els.find(el => el.textContent.trim() === "Share Screen").click();
-      console.log(els);}
-    );
     // await sframe.click(".join-audio-by-voip__join-btn");
-    // await sframe.click(".sharing-entry-button-container--green");
+    setTimeout(async () => {
+      await frame.$$eval("span", (els) => {
+        els.find((el) => el.textContent.trim() == "Share Screen").click();
+        // console.log(els);
+      });
+      
+    }, [5000]);
+    await frame.mouse.click(200, 200)
+    // await frame.waitForSelector(".sharing-entry-button-container--green");
+    // await frame.click(".sharing-entry-button-container--green");
     // await page.screenshot({path: "zoom.png"});
     res.json({
       message: "Headless browser launched and URL opened successfully",
