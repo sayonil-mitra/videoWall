@@ -1,0 +1,7 @@
+curl --location 'http://localhost:3000/join' \
+--header 'Content-Type: application/json' \
+--data '{
+    "url":"https://us04web.zoom.us/j/7997993864?pwd=MGtJQWw1SXB6ZmtpU1V6enp1MUZ0UT09",
+    "meetingID":"7997993864",
+    "passcode":"bs6Aqj"
+}
