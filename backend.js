@@ -1,42 +1,60 @@
 import express from "express";
-import puppeteer from "puppeteer";
+import puppeteer, { Dialog } from "puppeteer";
 
 const app = express();
 const port = 3000;
 
 // Middleware to parse JSON bodies
 app.use(express.json());
-
+let browser;
 // Route to launch headless browser and open the URL
 app.post("/join", async (req, res) => {
   // Extract URL from the request body
-  const { url } = req.body;
+  const { url, meetingId, passcode, name } = req.body;
   let buttonId = ".mbTuDeF1";
 
   try {
     // Launch headless browser
-    const browser = await puppeteer.launch({
-      headless: false,
-      defaultViewport: {
-        width: 1280,
-        height: 720,
-      },
-    });
+    // const browser = await puppeteer.launch({
+    //   headless: false,
+    //   defaultViewport: {
+    //     width: 1280,
+    //     height: 720,
+    //   },
+    // });
     // mbTuDeF1
 
     // Open the URL in a new page
-    const page = await browser.newPage();
-    await page.goto(url);
-
-    // Wait for the button with class "muF1" to render
-    // setTimeout(() => {
-    //   page.waitForSelector(buttonId);
-    //   // Click on the button
-    //   page.click(buttonId);
-    // }, 10000);
-    // await page.waitForSelector(buttonId);
-
-    // Send a success response
+    // const page = await browser.newPage();
+    // await page.goto(url);
+    const meetId = meetingId.trim();
+    const meetPassCode = passcode.trim();
+    const joineeName = name.trim();
+    console.log(meetId, meetPassCode, joineeName);
+    browser = await puppeteer.launch({headless: false});
+    const [page] = await browser.pages();
+    const ua =
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36";
+    await page.setUserAgent(ua);
+    await page.goto("https://app.zoom.us/wc/join");
+    const meetingInput = await page.waitForSelector('input[type="text"]');
+    await meetingInput.type(meetId);
+    const joinBtn = await page.waitForSelector(".btn-join");
+    await joinBtn.click();
+    await page.waitForFunction(`
+      document.querySelector("#webclient")
+        .contentDocument.querySelector("#input-for-pwd")
+    `);
+    const f = await page.waitForSelector("#webclient");
+    const frame = await f.contentFrame();
+    await frame.type("#input-for-pwd", meetPassCode);
+    await frame.type("#input-for-name", joineeName);
+    await frame.$$eval("button", els =>
+      els.find(el => el.textContent.trim() === "Join").click()
+    );
+    await frame.waitForSelector(".join-dialog");
+    await frame.click(".sharing-entry-button-container--green");
+    // await page.screenshot({path: "zoom.png"});
     res.json({
       message: "Headless browser launched and URL opened successfully",
     });
