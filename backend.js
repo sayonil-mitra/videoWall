@@ -53,7 +53,17 @@ app.post("/join", async (req, res) => {
       els.find(el => el.textContent.trim() === "Join").click()
     );
     await frame.waitForSelector(".join-dialog");
-    await frame.click(".sharing-entry-button-container--green");
+    // await page.waitForFunction(`
+    // document.querySelector("webclient").contentDocument.querySelector(".join-audio-by-voip__join-btn")
+    // `);
+    // const sf = await page.waitForSelector("#webclient");
+    // const sframe = await sf.contentFrame();
+    await frame.$$eval(".footer-button-base__button-label", els =>
+      {els.find(el => el.textContent.trim() === "Share Screen").click();
+      console.log(els);}
+    );
+    // await sframe.click(".join-audio-by-voip__join-btn");
+    // await sframe.click(".sharing-entry-button-container--green");
     // await page.screenshot({path: "zoom.png"});
     res.json({
       message: "Headless browser launched and URL opened successfully",
