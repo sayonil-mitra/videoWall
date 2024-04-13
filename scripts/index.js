@@ -4,21 +4,42 @@ document.addEventListener("DOMContentLoaded", function () {
   let sdkSecret = "1CfhlApkHSRFMBslYuEBqnJJ1wX3Fy6H";
   let passCode = "e1x9gn";
 
-  // ZoomMtg.preLoadWasm()
-  // ZoomMtg.prepareWebSDK()
+  ZoomMtg.preLoadWasm();
+  ZoomMtg.prepareWebSDK();
 
   // loads language files, also passes any error messages to the ui
-  // ZoomMtg.i18n.load('en-US')
+  ZoomMtg.i18n.load("en-US");
 
   // generate signature/ jwt token
-  let jwtToken = ZoomMtg.generateSDKSignature({
-    meetingNumber: meetingNumber,
-    // appKey: appKey,
-    sdkKey: appKey,
-    sdkSecret: sdkSecret,
-    role: "0",
-  });
+  //   let jwtToken = ZoomMtg.generateSDKSignature({
+  //     meetingNumber: meetingNumber,
+  //     // appKey: appKey,
+  //     sdkKey: appKey,
+  //     sdkSecret: sdkSecret,
+  //     role: "0",
+  //   });
+  let jwtToken = generateSignature(key, secret, meetingNumber, role);
 
+  function generateSignature(key, secret, meetingNumber, role) {
+    const iat = Math.round(new Date().getTime() / 1000) - 30;
+    const exp = iat + 60 * 60 * 2;
+    const oHeader = { alg: "HS256", typ: "JWT" };
+
+    const oPayload = {
+      sdkKey: key,
+      appKey: key,
+      mn: meetingNumber,
+      role: role,
+      iat: iat,
+      exp: exp,
+      tokenExp: exp,
+    };
+
+    const sHeader = JSON.stringify(oHeader);
+    const sPayload = JSON.stringify(oPayload);
+    const sdkJWT = KJUR.jws.JWS.sign("HS256", sHeader, sPayload, secret);
+    return sdkJWT;
+  }
   //   jwtToken =
   //     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3MTI2Mzg5MDgsImV4cCI6MTcxMjY0NjEwOCwibW4iOiI5MjU1MDU2MzcwMiIsInJvbGUiOiIwIn0.dxibiKiQ5bq7rU6HtFD1F_AjRVZBbbvbK1NFXGjrBtw";
   console.log(jwtToken);
