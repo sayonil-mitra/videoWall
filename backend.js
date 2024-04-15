@@ -1,5 +1,5 @@
 import express from "express";
-import puppeteer, { Dialog, Mouse } from "puppeteer";
+import puppeteer, { Dialog, Keyboard,  Mouse } from "puppeteer";
 
 const app = express();
 const port = 3000;
@@ -37,6 +37,9 @@ app.post("/join", async (req, res) => {
         "--disable-notifications",
         "--enable-automation",
         "--start-maximized",
+        // "--use-fake-ui-for-media-stream", // Use fake media stream dialogs
+        "--use-fake-device-for-media-stream", // Use fake device for media stream
+        '--auto-select-desktop-capture-source="Entire screen"', // Automatically select the entire screen in screen sharing
       ],
       ignoreDefaultArgs: false,
     });
@@ -72,8 +75,9 @@ app.post("/join", async (req, res) => {
         els.find((el) => el.textContent.trim() == "Share Screen").click();
         // console.log(els);
       });
+      
     }, [5000]);
-    await frame.mouse.click(200, 200);
+    await frame.mouse.click(200, 200)
     // await frame.waitForSelector(".sharing-entry-button-container--green");
     // await frame.click(".sharing-entry-button-container--green");
     // await page.screenshot({path: "zoom.png"});
