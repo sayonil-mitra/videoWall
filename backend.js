@@ -75,12 +75,9 @@ app.post("/join", async (req, res) => {
         els.find((el) => el.textContent.trim() == "Share Screen").click();
         // console.log(els);
       });
+      
     }, [5000]);
-    // await frame.mouse.click(200, 200)
-    // page.on("permissionrequest", (per) => {
-    //   console.log("PERMISSION", per);
-    // });
-    await frame.keyboard.press("tab");
+    await frame.mouse.click(200, 200)
     // await frame.waitForSelector(".sharing-entry-button-container--green");
     // await frame.click(".sharing-entry-button-container--green");
     // await page.screenshot({path: "zoom.png"});
