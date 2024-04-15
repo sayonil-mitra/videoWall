@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", function () {
   ZoomMtg.i18n.load("en-US");
 
   function generateSignature(key, secret, meetingNumber, role) {
-    const iat = Math.round(new Date().getTime() / 1000) - 30;
+    const iat = new Date().getTime() / 1000 - 30;
     const exp = iat + 60 * 60 * 2;
     const oHeader = { alg: "HS256", typ: "JWT" };
 
@@ -34,9 +34,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
   let jwtToken = generateSignature(appKey, sdkSecret, meetingNumber, role);
 
-  //   jwtToken =
-  //     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3MTI2Mzg5MDgsImV4cCI6MTcxMjY0NjEwOCwibW4iOiI5MjU1MDU2MzcwMiIsInJvbGUiOiIwIn0.dxibiKiQ5bq7rU6HtFD1F_AjRVZBbbvbK1NFXGjrBtw";
+  jwtToken =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzZGtLZXkiOiJuc0NiRG5JNlNLU01PRzlYVVJibGpRIiwiYXBwS2V5IjoibnNDYkRuSTZTS1NNT0c5WFVSYmxqUSIsIm1uIjoiNzIwOTIwMjMyMDQiLCJyb2xlIjowLCJpYXQiOjE3MTMxNjUxMDIsImV4cCI6MTcxMzE3MjMwMiwidG9rZW5FeHAiOjE3MTMxNzIzMDJ9.IGC2-ZCbfQX9mrkxfYFqssGMFRL0beLX3tnnaMg5EsA";
   console.log(jwtToken);
+  console.log(typeof SharedArrayBuffer === "function");
 
   // init zoom client and join meet
   ZoomMtg.init({

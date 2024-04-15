@@ -14,8 +14,84 @@
     <script src="https://source.zoom.us/3.5.2/lib/vendor/redux-thunk.min.js"></script>
     <script src="https://source.zoom.us/3.5.2/lib/vendor/lodash.min.js"></script>
     <script src="https://source.zoom.us/3.5.2/zoom-meeting-3.5.2.min.js"></script>
-    <script src="https://www.npmjs.com/package/jsrsasign"></script>
-    <script src="./scripts/index.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsrsasign/11.1.0/jsrsasign-all-min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            let meetingNumber = "92550563702";
+            let appKey = "KOPEhyBITsOhVzRIVKHmyw";
+            let sdkSecret = "Reh37STxuMilEwAe8lidh88Zvb8FAJ2i";
+            let passCode = "123456";
+            let role = "1";
+
+            ZoomMtg.preLoadWasm();
+            ZoomMtg.prepareWebSDK();
+
+            // loads language files, also passes any error messages to the ui
+            ZoomMtg.i18n.load("en-US");
+
+            function generateSignature(key, secret, meetingNumber, role) {
+                const iat = new Date().getTime() / 1000 - 30;
+                const exp = iat + 60 * 60 * 2;
+                const oHeader = { alg: "HS256", typ: "JWT" };
+
+                const oPayload = {
+                    sdkKey: key,
+                    appKey: key,
+                    mn: meetingNumber,
+                    role: role,
+                    iat: iat,
+                    exp: exp,
+                    tokenExp: exp,
+                };
+
+                const sHeader = JSON.stringify(oHeader);
+                const sPayload = JSON.stringify(oPayload);
+                const sdkJWT = KJUR.jws.JWS.sign("HS256", sHeader, sPayload, secret);
+                return sdkJWT;
+            }
+
+            // let jwtToken = generateSignature(appKey, sdkSecret, meetingNumber, role);
+            let jwtToken = ZoomMtg.generateSDKSignature({
+                meetingNumber: meetingNumber,
+                role: role,
+                sdkKey: appKey,
+                sdkSecret: sdkSecret,
+                success: (res) => console.log("signature done", res)
+            })
+
+            // jwtToken =
+            //     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzZGtLZXkiOiJuc0NiRG5JNlNLU01PRzlYVVJibGpRIiwiYXBwS2V5IjoibnNDYkRuSTZTS1NNT0c5WFVSYmxqUSIsIm1uIjoiNzIwOTIwMjMyMDQiLCJyb2xlIjowLCJpYXQiOjE3MTMxNjUxMDIsImV4cCI6MTcxMzE3MjMwMiwidG9rZW5FeHAiOjE3MTMxNzIzMDJ9.IGC2-ZCbfQX9mrkxfYFqssGMFRL0beLX3tnnaMg5EsA";
+            console.log(jwtToken);
+            console.log(typeof SharedArrayBuffer === "function"); // if SharedArrayBuffer is on
+
+            // init zoom client and join meet
+            ZoomMtg.init({
+                leaveUrl: "https://www.zoom.us",
+                isSupportAV: true,
+                success: function (res) {
+                    console.log("zoom init success", res);
+                },
+                error: function (res) {
+                    console.log("zoom init fail", res);
+                },
+            });
+
+            ZoomMtg.join({
+                meetingNumber: meetingNumber,
+                sdkKey: appKey,
+                userName: "sayo",
+                passWord: passCode,
+                signature: jwtToken,
+                success: function (res) {
+                    console.log("join meeting success");
+                },
+                error: function (res) {
+                    console.log(res);
+                },
+            });
+        });
+
+    </script>
 </body>
 
 </html>
