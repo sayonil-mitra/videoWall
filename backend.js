@@ -1,5 +1,5 @@
 import express from "express";
-import puppeteer, { Dialog, Keyboard,  Mouse } from "puppeteer";
+import puppeteer, { Dialog, Keyboard, Mouse } from "puppeteer";
 
 const app = express();
 const port = 3000;
@@ -11,26 +11,14 @@ let browser;
 app.post("/join", async (req, res) => {
   // Extract URL from the request body
   const { url, meetingId, passcode, name } = req.body;
-  let buttonId = ".mbTuDeF1";
 
   try {
-    // Launch headless browser
-    // const browser = await puppeteer.launch({
-    //   headless: false,
-    //   defaultViewport: {
-    //     width: 1280,
-    //     height: 720,
-    //   },
-    // });
-    // mbTuDeF1
-
-    // Open the URL in a new page
-    // const page = await browser.newPage();
-    // await page.goto(url);
     const meetId = meetingId.trim();
     const meetPassCode = passcode.trim();
     const joineeName = name.trim();
     console.log(meetId, meetPassCode, joineeName);
+
+    // launch browser =======================================
     browser = await puppeteer.launch({
       headless: false,
       args: [
@@ -38,11 +26,13 @@ app.post("/join", async (req, res) => {
         "--enable-automation",
         "--start-maximized",
         // "--use-fake-ui-for-media-stream", // Use fake media stream dialogs
-        "--use-fake-device-for-media-stream", // Use fake device for media stream
-        '--auto-select-desktop-capture-source="Entire screen"', // Automatically select the entire screen in screen sharing
+        // "--use-fake-device-for-media-stream", // Use fake device for media stream
+        // '--auto-select-desktop-capture-source="Entire screen"', // Automatically select the entire screen in screen sharing
       ],
       ignoreDefaultArgs: false,
     });
+
+    // navigate to zoom meet an join =======================================
     const [page] = await browser.pages();
     const ua =
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36";
@@ -64,23 +54,20 @@ app.post("/join", async (req, res) => {
       els.find((el) => el.textContent.trim() === "Join").click()
     );
     await frame.waitForSelector(".join-dialog");
-    // await page.waitForFunction(`
-    // document.querySelector("webclient").contentDocument.querySelector(".join-audio-by-voip__join-btn")
-    // `);
-    // const sf = await page.waitForSelector("#webclient");
-    // const sframe = await sf.contentFrame();
-    // await sframe.click(".join-audio-by-voip__join-btn");
+
+    // after joining zoom meet, close auio join ialog box an share screen =======================================
+    await frame.$$eval("button", (els) => {
+      els.find((el) => el?.classList.contains("join-dialog__close")).click();
+    });
     setTimeout(async () => {
       await frame.$$eval("span", (els) => {
         els.find((el) => el.textContent.trim() == "Share Screen").click();
-        // console.log(els);
       });
-      
+
+      //   frame.on("dialog", (res) => console.log(res)); // check if dialog box appears
     }, [5000]);
-    await frame.mouse.click(200, 200)
-    // await frame.waitForSelector(".sharing-entry-button-container--green");
-    // await frame.click(".sharing-entry-button-container--green");
-    // await page.screenshot({path: "zoom.png"});
+
+    // success response message =======================================
     res.json({
       message: "Headless browser launched and URL opened successfully",
     });
