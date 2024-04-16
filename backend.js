@@ -1,5 +1,13 @@
 import express from "express";
 import puppeteer, { Dialog, Keyboard, Mouse } from "puppeteer";
+import { spawn } from "child_process";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 const port = 3000;
@@ -8,75 +16,71 @@ const port = 3000;
 app.use(express.json());
 let browser;
 // Route to launch headless browser and open the URL
-app.post("/join", async (req, res) => {
+app.post("/capture", async (req, res) => {
   // Extract URL from the request body
-  const { url, meetingId, passcode, name } = req.body;
+  const { url } = req.body;
+
+  // Make sure URL is provided
+  if (!url) {
+    return res.status(400).json({ error: "URL is required" });
+  }
 
   try {
-    const meetId = meetingId.trim();
-    const meetPassCode = passcode.trim();
-    const joineeName = name.trim();
-    console.log(meetId, meetPassCode, joineeName);
+    // Launch Puppeteer browser
+    browser = await puppeteer.launch();
+    const page = await browser.newPage();
 
-    // launch browser =======================================
-    browser = await puppeteer.launch({
-      headless: false,
-      args: [
-        "--disable-notifications",
-        "--enable-automation",
-        "--start-maximized",
-        // "--use-fake-ui-for-media-stream", // Use fake media stream dialogs
-        // "--use-fake-device-for-media-stream", // Use fake device for media stream
-        // '--auto-select-desktop-capture-source="Entire screen"', // Automatically select the entire screen in screen sharing
-      ],
-      ignoreDefaultArgs: false,
+    // Navigate to the URL
+    await page.goto(url);
+
+    // Capture a screenshot as a buffer
+    const screenshotBuffer = await page.screenshot({ type: "png" });
+
+    // Define file paths
+    const pngFilePath = path.join(__dirname, "screenshot.png");
+    const yuvFilePath = path.join(__dirname, "output.yuv");
+
+    // Write the screenshot buffer to a file
+    fs.writeFileSync(pngFilePath, screenshotBuffer);
+
+    // Use FFmpeg to convert the PNG file to a YUV file
+    const ffmpegProcess = spawn("ffmpeg", [
+      "-i",
+      pngFilePath,
+      "-pix_fmt",
+      "yuv420p",
+      yuvFilePath,
+    ]);
+
+    // Handle FFmpeg process exit
+    ffmpegProcess.on("close", (code) => {
+      if (code === 0) {
+        // Conversion was successful
+        res.json({ message: "Conversion successful", yuvFilePath });
+      } else {
+        // Conversion failed
+        res.status(500).json({ error: "Conversion failed" });
+      }
+
+      // Clean up the PNG file
+      fs.unlinkSync(pngFilePath);
     });
 
-    // navigate to zoom meet an join =======================================
-    const [page] = await browser.pages();
-    const ua =
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36";
-    await page.setUserAgent(ua);
-    await page.goto("https://app.zoom.us/wc/join");
-    const meetingInput = await page.waitForSelector('input[type="text"]');
-    await meetingInput.type(meetId);
-    const joinBtn = await page.waitForSelector(".btn-join");
-    await joinBtn.click();
-    await page.waitForFunction(`
-      document.querySelector("#webclient")
-        .contentDocument.querySelector("#input-for-pwd")
-    `);
-    const f = await page.waitForSelector("#webclient");
-    const frame = await f.contentFrame();
-    await frame.type("#input-for-pwd", meetPassCode);
-    await frame.type("#input-for-name", joineeName);
-    await frame.$$eval("button", (els) =>
-      els.find((el) => el.textContent.trim() === "Join").click()
-    );
-    await frame.waitForSelector(".join-dialog");
-
-    // after joining zoom meet, close auio join ialog box an share screen =======================================
-    await frame.$$eval("button", (els) => {
-      els.find((el) => el?.classList.contains("join-dialog__close")).click();
+    // Handle errors from FFmpeg
+    ffmpegProcess.on("error", (err) => {
+      res.status(500).json({ error: "FFmpeg error: " + err.message });
     });
-    setTimeout(async () => {
-      await frame.$$eval("span", (els) => {
-        els.find((el) => el.textContent.trim() == "Share Screen").click();
-      });
 
-      //   frame.on("dialog", (res) => console.log(res)); // check if dialog box appears
-    }, [5000]);
-
-    // success response message =======================================
-    res.json({
-      message: "Headless browser launched and URL opened successfully",
-    });
-  } catch (error) {
+    // Close the browser
+    await browser.close();
+  } catch (err) {
     // Handle errors
-    console.error("Error:", error);
-    res
-      .status(500)
-      .json({ error: "An error occurred while launching headless browser" });
+    res.status(500).json({ error: err.message });
+
+    // Ensure the browser is closed if an error occurs
+    if (browser) {
+      await browser.close();
+    }
   }
 });
 
