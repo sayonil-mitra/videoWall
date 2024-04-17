@@ -1,5 +1,11 @@
 import express from "express";
 import puppeteer, { Dialog, Keyboard,  Mouse } from "puppeteer";
+import { screen, mouse, straightTo, centerOf, keyboard, Key } from "@nut-tree/nut-js";
+import { PuppeteerScreenRecorder } from 'puppeteer-screen-recorder';
+import { spawn } from "child_process";
+import path, { dirname } from "path";
+import { fileURLToPath } from "url";
+
 
 const app = express();
 const port = 3000;
@@ -42,12 +48,21 @@ app.post("/join", async (req, res) => {
         '--auto-select-desktop-capture-source="Entire screen"', // Automatically select the entire screen in screen sharing
       ],
       ignoreDefaultArgs: false,
+        defaultViewport: {
+          width: 1280,
+          height: 720,
+        },
     });
     const [page] = await browser.pages();
     const ua =
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36";
     await page.setUserAgent(ua);
+    await page.goto(url);
     await page.goto("https://app.zoom.us/wc/join");
+    const p2 = await browser.newPage();
+    await p2.goto(url);
+    await keyboard.pressKey(Key.LeftControl, Key.Tab);
+    await keyboard.releaseKey(Key.LeftControl);
     const meetingInput = await page.waitForSelector('input[type="text"]');
     await meetingInput.type(meetId);
     const joinBtn = await page.waitForSelector(".btn-join");
@@ -64,28 +79,27 @@ app.post("/join", async (req, res) => {
       els.find((el) => el.textContent.trim() === "Join").click()
     );
     await frame.waitForSelector(".join-dialog");
-    // await page.waitForFunction(`
-    // document.querySelector("webclient").contentDocument.querySelector(".join-audio-by-voip__join-btn")
-    // `);
-    // const sf = await page.waitForSelector("#webclient");
-    // const sframe = await sf.contentFrame();
-    // await sframe.click(".join-audio-by-voip__join-btn");
     setTimeout(async () => {
       await frame.$$eval("span", (els) => {
         els.find((el) => el.textContent.trim() == "Share Screen").click();
-        // console.log(els);
       });
-      
+      setTimeout(async()=>{
+        await keyboard.pressKey(Key.Tab);
+        await keyboard.pressKey(Key.Left);
+        await keyboard.pressKey(Key.Left);
+        await keyboard.pressKey(Key.Tab);
+        await keyboard.pressKey(Key.Down);
+        await keyboard.pressKey(Key.Return);
+        setTimeout((async()=>{
+          await keyboard.pressKey(Key.LeftControl, Key.M);
+          await keyboard.releaseKey(Key.LeftControl);
+        }), [1000])
+      }, [2000])
     }, [5000]);
-    await frame.mouse.click(200, 200)
-    // await frame.waitForSelector(".sharing-entry-button-container--green");
-    // await frame.click(".sharing-entry-button-container--green");
-    // await page.screenshot({path: "zoom.png"});
     res.json({
-      message: "Headless browser launched and URL opened successfully",
+      message: "Headless browser launched and URL opened successfully"
     });
   } catch (error) {
-    // Handle errors
     console.error("Error:", error);
     res
       .status(500)

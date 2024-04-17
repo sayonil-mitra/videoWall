@@ -10,14 +10,16 @@
     },
     "author": "",
     "license": "ISC",
+    "devDependencies": {
+        "nodemon": "^3.1.0"
+    },
     "dependencies": {
-        "@zoom/meetingsdk": "^3.5.2",
-        "@zoomus/websdk": "^2.18.3",
+        "@nut-tree/nut-js": "^3.1.2",
         "body-parser": "^1.20.2",
         "express": "^4.19.2",
-        "jsrsasign": "^11.1.0",
-        "nodemon": "^3.1.0",
-        "puppeteer": "^22.6.3"
+        "ffmpeg-static": "^5.2.0",
+        "puppeteer": "^22.6.3",
+        "puppeteer-screen-recorder": "^3.0.3"
     },
     "type": "module"
 }
