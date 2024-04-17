@@ -14,9 +14,12 @@
         "nodemon": "^3.1.0"
     },
     "dependencies": {
+        "@nut-tree/nut-js": "^3.1.2",
         "body-parser": "^1.20.2",
         "express": "^4.19.2",
-        "puppeteer": "^22.6.3"
+        "ffmpeg-static": "^5.2.0",
+        "puppeteer": "^22.6.3",
+        "puppeteer-screen-recorder": "^3.0.3"
     },
     "type": "module"
 }
